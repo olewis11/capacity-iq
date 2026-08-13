@@ -464,8 +464,8 @@ function App(){
       load(STORE_SNAPS_PEOPLE_URL),load(STORE_SNAPS_PROJECTS_URL),load(STORE_SNAPS_CHANGELOG_URL),load(STORE_SNAPS_USERS_URL),
       fetchIAPEmail(),
     ]).then(([peopleData,projectsData,logData,usersData,snapsPeopleData,snapsProjectsData,snapsChangelogData,snapsUsersData,iapEmail])=>{
-      const isLocal=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1';
-      setCurrentUserEmail(isLocal&&!iapEmail?SUPERADMIN_EMAIL:iapEmail);
+      // This personal copy never has a real backend to authenticate against — always admin.
+      setCurrentUserEmail(iapEmail||SUPERADMIN_EMAIL);
       if(usersData?.version===STORE_VERSION&&Array.isArray(usersData?.users)){
         setUserRegistry(usersData.users);
       }
@@ -606,8 +606,7 @@ function App(){
 
   // Compute permissions for the current user
   const userPerms=useMemo(()=>{
-    const isLocal=window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1';
-    const email=isLocal&&!currentUserEmail?SUPERADMIN_EMAIL:currentUserEmail;
+    const email=currentUserEmail||SUPERADMIN_EMAIL;
     if(!email)return{isAdmin:false,canEditSupply:false,canEditProject:()=>false,canDeleteProject:false,role:'viewer',email:null,userName:null,_isRealAdmin:false};
     let base;
     if(email.toLowerCase()===SUPERADMIN_EMAIL.toLowerCase())
