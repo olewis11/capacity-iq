@@ -433,7 +433,7 @@ function App(){
 
   // ── Local-storage persistence ────────────────────────────────
   // This personal copy has no backend (see README) — everything below persists
-  // to the browser's localStorage instead of a Vibes store, keyed under these names.
+  // to the browser's localStorage, keyed under these names.
   const STORE_PEOPLE_URL='capacityiq-demo:people';
   const STORE_PROJECTS_URL='capacityiq-demo:projects';
   const STORE_LOG_URL='capacityiq-demo:changelog';

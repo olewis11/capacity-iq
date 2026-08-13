@@ -8,7 +8,7 @@ This is a personal copy of a tool I built for internal use at a previous job. It
 
 - React 18 (loaded as a global, no bundler-managed import)
 - esbuild — bundles `src/app.jsx` into a single self-contained `dist/index.html`
-- No backend included — see "Persistence" below
+- No backend — data persists to browser `localStorage`, see "Persistence" below
 
 ## Setup
 
@@ -31,4 +31,4 @@ chmod +x tools/esbuild
 
 ## Persistence
 
-The app currently reads/writes state via `fetch` calls to `/vibes/store/...` — a proprietary internal hosting API not included here. Out of the box this copy has **no working backend**; the UI will load but nothing will persist. To use it for real, swap those calls (in `src/app.jsx` and `src/components/StoreDataModal.jsx`) for your own storage — localStorage for a quick demo, or a small REST/DB service for something durable.
+There's no backend — state persists to the browser's `localStorage` (see `loadLS`/`saveLS` in `src/app.jsx` and `src/components/StoreDataModal.jsx`). On a brand-new browser with nothing saved yet, it seeds a small fictional demo org (`buildDemoSeed()` in `app.jsx`) instead of starting empty, and shows a "Demo Mode" banner. To back this with something durable — shared across devices/users — swap `loadLS`/`saveLS` for calls to your own REST/DB service.

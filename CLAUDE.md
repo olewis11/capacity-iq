@@ -13,9 +13,9 @@ CapacityIQ is a React SPA for engineering resource planning: it maps headcount s
 | `./build.sh` | Compile + bundle → `dist/index.html`; exit 0 on success |
 | `./dev.sh` | fswatch watcher; rebuilds on any change under `src/` or `index.html` |
 
-## Persistence backend
+## Persistence
 
-This app's data persistence (`state.engineers`, `projects`, `assignments`, `discMeta`, change log, snapshots) is read/written via `fetch` calls to `/vibes/store/...` REST endpoints (see `app.jsx` and `StoreDataModal.jsx`). That's a proprietary internal hosting API this personal copy does not include — there is no backend here. To make this app persist data somewhere, replace those fetch calls with your own storage layer (e.g. localStorage for a quick demo, or a small REST/DB backend for something durable).
+This copy has no backend — all data (`state.engineers`, `projects`, `assignments`, `discMeta`, change log, snapshots) is read/written to the browser's `localStorage` (see the `STORE_*` keys and `loadLS`/`saveLS` helpers in `app.jsx`, and `StoreDataModal.jsx`). On a brand-new browser with nothing saved yet, `buildDemoSeed()` in `app.jsx` populates a small fictional org so the app isn't empty on first load. To back this with something durable instead, swap `loadLS`/`saveLS` for calls to your own REST/DB service.
 
 ## Source layout
 
@@ -62,7 +62,7 @@ This app's data persistence (`state.engineers`, `projects`, `assignments`, `disc
 | `WorkdayImportModal.jsx` | Workday headcount CSV import wizard |
 | `EngineerRegistryModal.jsx` | Manage engineer roster and discipline assignments |
 | `TierOrderModal.jsx` | Drag-to-reorder discipline tier hierarchy |
-| `StoreDataModal.jsx` | Vibes store data file browser |
+| `StoreDataModal.jsx` | Local demo data (localStorage) file browser |
 | `UserRegistryModal.jsx` | User access/role management |
 | `ActionMenu.jsx` | Context action menu for project rows |
 
