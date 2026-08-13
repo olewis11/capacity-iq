@@ -46,31 +46,8 @@ const ORG_ENGINEERS=[];
    FETCH IAP EMAIL
 ═══════════════════════════════════════════════════════════════ */
 async function fetchIAPEmail(){
-  // Attempt 1: GCP IAP identity JWT endpoint
-  try{
-    const r=await fetch('/_gcp_iap/identity');
-    if(r.ok){
-      const jwt=(await r.text()).trim();
-      const parts=jwt.split('.');
-      if(parts.length>=2){
-        const pad=s=>s+'='.repeat((4-s.length%4)%4);
-        const payload=JSON.parse(atob(pad(parts[1].replace(/-/g,'+').replace(/_/g,'/'))));
-        if(payload.email)return payload.email.toLowerCase();
-      }
-    }
-  }catch(e){}
-  // Attempt 2: write a tiny probe to the per-user Vibes store and read back
-  // the 'writer' field from the metadata envelope — the server stamps IAP identity
-  try{
-    await fetch('/vibes/store/mine/identity-probe',{
-      method:'PUT',headers:{'Content-Type':'application/json'},body:'{"v":1}'
-    });
-    const r=await fetch('/vibes/store/mine/identity-probe?meta=true');
-    if(r.ok){
-      const data=await r.json();
-      if(data?._meta?.writer)return data._meta.writer.toLowerCase();
-    }
-  }catch(e){}
+  // This personal copy has no IAP/backend to identify against — on localhost
+  // the caller falls back to SUPERADMIN_EMAIL, which is what we want for a demo.
   return null;
 }
 
@@ -104,6 +81,89 @@ function migrateTierOrder(to){
 ═══════════════════════════════════════════════════════════════ */
 const TODAY=currentMonth();
 const DEFAULT_VIEW_START=addMonths(TODAY,-1);
+
+/* ═══════════════════════════════════════════════════════════════
+   DEMO SEED DATA
+   This personal copy has no backend (see README) — on a brand-new
+   browser (nothing in localStorage yet) we seed a small fictional
+   org so the app isn't just an empty state.
+═══════════════════════════════════════════════════════════════ */
+function buildDemoSeed(){
+  const discMeta={
+    'SW-FE-Web-Growth':    {color:'#3B82F6',bg:'#DBEAFE',border:'#93C5FD',abbr:'GRO',bu:'SW',dept:'Frontend',discipline:'Web Platform',subdisc:'Growth'},
+    'SW-FE-Web-Core':      {color:'#0EA5E9',bg:'#E0F2FE',border:'#7DD3FC',abbr:'COR',bu:'SW',dept:'Frontend',discipline:'Web Platform',subdisc:'Core'},
+    'SW-FE-Mobile-iOS':    {color:'#6366F1',bg:'#EEF2FF',border:'#A5B4FC',abbr:'iOS',bu:'SW',dept:'Frontend',discipline:'Mobile',subdisc:'iOS'},
+    'SW-FE-Mobile-Android':{color:'#8B5CF6',bg:'#EDE9FE',border:'#C4B5FD',abbr:'AND',bu:'SW',dept:'Frontend',discipline:'Mobile',subdisc:'Android'},
+    'SW-BE-Infra-Services':{color:'#F59E0B',bg:'#FEF3C7',border:'#FCD34D',abbr:'SVC',bu:'SW',dept:'Backend',discipline:'Infrastructure',subdisc:'Services'},
+    'SW-BE-Infra-Data':    {color:'#F97316',bg:'#FFF7ED',border:'#FED7AA',abbr:'DAT',bu:'SW',dept:'Backend',discipline:'Infrastructure',subdisc:'Data'},
+    'SW-QA-Testing-Auto':  {color:'#EC4899',bg:'#FCE7F3',border:'#F9A8D4',abbr:'AUT',bu:'SW',dept:'QA',discipline:'Testing',subdisc:'Automation'},
+    'HW-EE-Power-Battery': {color:'#10B981',bg:'#D1FAE5',border:'#6EE7B7',abbr:'BAT',bu:'HW',dept:'Electrical',discipline:'Power Systems',subdisc:'Battery'},
+    'HW-EE-Power-Charging':{color:'#14B8A6',bg:'#CCFBF1',border:'#5EEAD4',abbr:'CHG',bu:'HW',dept:'Electrical',discipline:'Power Systems',subdisc:'Charging'},
+    'HW-ME-Struct-Chassis':{color:'#059669',bg:'#D1FAE5',border:'#6EE7B7',abbr:'CHS',bu:'HW',dept:'Mechanical',discipline:'Structures',subdisc:'Chassis'},
+  };
+  const tierOrder={
+    bus:['SW','HW'],
+    depts:['Frontend','Backend','QA','Electrical','Mechanical'],
+    disciplines:['Web Platform','Mobile','Infrastructure','Testing','Power Systems','Structures'],
+    subdiscs:['Growth','Core','iOS','Android','Services','Data','Automation','Battery','Charging','Chassis'],
+  };
+  const engineers=[
+    {id:'eng-1', name:'Alex Rivera',     discipline:'SW-FE-Web-Growth',     title:'Senior Software Engineer'},
+    {id:'eng-2', name:'Priya Nair',      discipline:'SW-FE-Web-Growth',     title:'Software Engineer'},
+    {id:'eng-3', name:'Jordan Kim',      discipline:'SW-FE-Web-Core',       title:'Staff Software Engineer'},
+    {id:'eng-4', name:'Sam Okafor',      discipline:'SW-FE-Web-Core',       title:'Software Engineer'},
+    {id:'eng-5', name:'Taylor Brooks',   discipline:'SW-FE-Mobile-iOS',     title:'Senior Software Engineer'},
+    {id:'eng-6', name:'Morgan Chase',    discipline:'SW-FE-Mobile-Android', title:'Software Engineer'},
+    {id:'eng-7', name:'Casey Lindgren',  discipline:'SW-BE-Infra-Services', title:'Senior Software Engineer'},
+    {id:'eng-8', name:'Devon Park',      discipline:'SW-BE-Infra-Services', title:'Software Engineer'},
+    {id:'eng-9', name:'Riley Thompson',  discipline:'SW-BE-Infra-Data',     title:'Data Engineer'},
+    {id:'eng-10',name:'Jamie Ferreira',  discipline:'SW-QA-Testing-Auto',   title:'QA Engineer', isContractor:true},
+    {id:'eng-11',name:'Avery Santos',    discipline:'HW-EE-Power-Battery',  title:'Electrical Engineer'},
+    {id:'eng-12',name:'Quinn Delacroix', discipline:'HW-EE-Power-Charging', title:'Senior Electrical Engineer'},
+    {id:'eng-13',name:'Harper Osei',     discipline:'HW-ME-Struct-Chassis', title:'Mechanical Engineer'},
+    {id:'eng-14',name:'Reese Whitfield', discipline:'HW-ME-Struct-Chassis', title:'Senior Mechanical Engineer'},
+    {id:'eng-15',name:'Skyler Novak',    discipline:'SW-FE-Mobile-iOS',     title:'Software Engineer', isContractor:true},
+    {id:'eng-16',name:'Elliot Vance',    discipline:'SW-BE-Infra-Services', title:'Principal Engineer', inactive:true},
+  ];
+  const projects=[
+    {id:'proj-1',name:'Aurora Platform Rebuild',color:PROJECT_COLORS[0],
+      startMonth:addMonths(TODAY,-2),endMonth:addMonths(TODAY,9),
+      demand:{'Web Platform':2,'Mobile':1.5,'Infrastructure':2,'Testing':1},
+      rampUp:{enabled:true,months:2},rampDown:{enabled:false,months:2}},
+    {id:'proj-2',name:'Falcon Hardware Refresh',color:PROJECT_COLORS[1],
+      startMonth:addMonths(TODAY,-2),endMonth:addMonths(TODAY,8),
+      demand:{'Power Systems':1.5,'Structures':1},
+      rampUp:{enabled:false,months:2},rampDown:{enabled:true,months:2}},
+    {id:'proj-3',name:'Nimbus Mobile Expansion',color:PROJECT_COLORS[2],
+      startMonth:addMonths(TODAY,-1),endMonth:addMonths(TODAY,7),
+      demand:{'Mobile':2,'Web Platform':1},
+      rampUp:{enabled:true,months:1},rampDown:{enabled:false,months:2}},
+    {id:'proj-4',name:'Internal Tools Cleanup',color:PROJECT_COLORS[3],
+      startMonth:TODAY,endMonth:addMonths(TODAY,3),
+      demand:{'Infrastructure':0.5,'Testing':0.5},
+      rampUp:{enabled:false,months:2},rampDown:{enabled:false,months:2}},
+  ];
+  const asn=(id,engineerId,projectId,fromOffset,toOffset,allocation)=>
+    ({id,engineerId,projectId,startMonth:addMonths(TODAY,fromOffset),endMonth:addMonths(TODAY,toOffset),allocation});
+  const assignments=[
+    asn('a1', 'eng-1','proj-1', -2,9,100),
+    asn('a2', 'eng-2','proj-1',  0,6,75),
+    asn('a3', 'eng-3','proj-1', -2,9,100),
+    asn('a4', 'eng-5','proj-3', -1,7,100),
+    asn('a5', 'eng-6','proj-3', -1,7,100),
+    asn('a6', 'eng-15','proj-3', 1,7,50),
+    asn('a7', 'eng-7','proj-1', -2,9,100),
+    asn('a8', 'eng-8','proj-4',  0,3,50),
+    asn('a9', 'eng-9','proj-1', -1,9,75),
+    asn('a10','eng-10','proj-4', 0,3,100),
+    asn('a11','eng-11','proj-2',-2,8,100),
+    asn('a12','eng-12','proj-2',-2,8,75),
+    asn('a13','eng-13','proj-2',-2,8,100),
+    asn('a14','eng-14','proj-2', 2,8,50),
+  ];
+  return{discMeta,tierOrder,engineers,projects,assignments};
+}
+
 function App(){
   // var hoisting eliminates TDZ for peopleOrgRoots captured in closures defined before its useMemo
   var peopleOrgRoots;
@@ -215,7 +275,7 @@ function App(){
   const[testRole,setTestRole]=useState(null); // null | 'pm' | 'fm'
   const[currentUserEmail,setCurrentUserEmail]=useState(null);
   const[userRegistry,setUserRegistry]=useState([]);
-  const STORE_USERS_URL='/vibes/store/capacity-iq:shared/users';
+  const STORE_USERS_URL='capacityiq-demo:users';
   const[rosterTarget,setRosterTarget]=useState(null);
   const[rosterModal,setRosterModal]=useState(null); // {label,discs,color} — TeamRosterModal overlay
   const[peopleView,setPeopleView]=useState('lr'); // 'list'|'lr'
@@ -371,15 +431,19 @@ function App(){
     return()=>document.removeEventListener('keydown',h);
   },[handleUndo,handleRedo]);
 
-  // ── Vibes-store persistence ────────────────────────────────
-  const STORE_PEOPLE_URL='/vibes/store/capacity-iq:shared/people';
-  const STORE_PROJECTS_URL='/vibes/store/capacity-iq:shared/projects';
-  const STORE_LOG_URL='/vibes/store/capacity-iq:shared/changelog';
-  const STORE_SNAPS_PEOPLE_URL='/vibes/store/capacity-iq:shared/snapshots-people';
-  const STORE_SNAPS_PROJECTS_URL='/vibes/store/capacity-iq:shared/snapshots-projects';
-  const STORE_SNAPS_CHANGELOG_URL='/vibes/store/capacity-iq:shared/snapshots-changelog';
-  const STORE_SNAPS_USERS_URL='/vibes/store/capacity-iq:shared/snapshots-users';
+  // ── Local-storage persistence ────────────────────────────────
+  // This personal copy has no backend (see README) — everything below persists
+  // to the browser's localStorage instead of a Vibes store, keyed under these names.
+  const STORE_PEOPLE_URL='capacityiq-demo:people';
+  const STORE_PROJECTS_URL='capacityiq-demo:projects';
+  const STORE_LOG_URL='capacityiq-demo:changelog';
+  const STORE_SNAPS_PEOPLE_URL='capacityiq-demo:snapshots-people';
+  const STORE_SNAPS_PROJECTS_URL='capacityiq-demo:snapshots-projects';
+  const STORE_SNAPS_CHANGELOG_URL='capacityiq-demo:snapshots-changelog';
+  const STORE_SNAPS_USERS_URL='capacityiq-demo:snapshots-users';
   const STORE_VERSION=2;
+  const loadLS=key=>{try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):null;}catch(e){return null;}};
+  const saveLS=(key,data)=>{try{localStorage.setItem(key,JSON.stringify(data));}catch(e){}};
   const saveTimerRef=useRef(null);
   const saveProjectsTimerRef=useRef(null);
   const saveLogTimerRef=useRef(null);
@@ -388,7 +452,7 @@ function App(){
 
   // Load state, changelog, per-store snapshots, and users on mount; auto-snapshot if needed
   React.useEffect(()=>{
-    const load=url=>fetch(url).then(r=>r.ok?r.json():null).catch(()=>null);
+    const load=loadLS;
     const loadSnaps=data=>data?.version===STORE_VERSION&&Array.isArray(data?.snapshots)?data.snapshots:[];
     Promise.all([
       load(STORE_PEOPLE_URL),load(STORE_PROJECTS_URL),load(STORE_LOG_URL),load(STORE_USERS_URL),
@@ -400,13 +464,20 @@ function App(){
       if(usersData?.version===STORE_VERSION&&Array.isArray(usersData?.users)){
         setUserRegistry(usersData.users);
       }
-      const hasPeople=peopleData?.version===STORE_VERSION&&Array.isArray(peopleData?.engineers);
-      const hasProjects=projectsData?.version===STORE_VERSION&&Array.isArray(projectsData?.projects);
-      const engineers=hasPeople?peopleData.engineers:[];
-      const discMeta=migrateDiscMeta(hasPeople?(peopleData.discMeta||null):null);
-      const tierOrder=migrateTierOrder(hasPeople?(peopleData.tierOrder||undefined):undefined);
-      const projects=hasProjects?projectsData.projects:[];
-      const assignments=hasProjects?projectsData.assignments:[];
+      let hasPeople=peopleData?.version===STORE_VERSION&&Array.isArray(peopleData?.engineers);
+      let hasProjects=projectsData?.version===STORE_VERSION&&Array.isArray(projectsData?.projects);
+      let engineers=hasPeople?peopleData.engineers:[];
+      let discMeta=migrateDiscMeta(hasPeople?(peopleData.discMeta||null):null);
+      let tierOrder=migrateTierOrder(hasPeople?(peopleData.tierOrder||undefined):undefined);
+      let projects=hasProjects?projectsData.projects:[];
+      let assignments=hasProjects?projectsData.assignments:[];
+      // Brand-new browser (nothing saved yet) — seed with demo data instead of an empty state
+      if(!hasPeople&&!hasProjects){
+        const seed=buildDemoSeed();
+        engineers=seed.engineers;discMeta=seed.discMeta;tierOrder=seed.tierOrder;
+        projects=seed.projects;assignments=seed.assignments;
+        hasPeople=true;hasProjects=true;
+      }
       const stateLoaded=hasPeople||hasProjects;
       if(stateLoaded){
         dispatch({type:'LOAD_STATE',projects,engineers,assignments,discMeta,tierOrder});
@@ -429,7 +500,7 @@ function App(){
         const todayStr=new Date().toISOString().slice(0,10);
         const ts=Date.now();
         const autoSnap=(label,extra)=>({id:`snap-${todayStr}-auto`,date:todayStr,label,timestamp:ts,auto:true,...extra});
-        const putSnap=(url,snaps)=>fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:STORE_VERSION,snapshots:snaps})}).catch(()=>{});
+        const putSnap=(key,snaps)=>saveLS(key,{version:STORE_VERSION,snapshots:snaps});
         if(!existingSnapsPeople.some(s=>s.date===todayStr&&s.auto)){
           const updated=[autoSnap('Daily auto-snapshot',{engineers,discMeta,tierOrder}),...existingSnapsPeople].slice(0,10);
           setSnapsPeople(updated);putSnap(STORE_SNAPS_PEOPLE_URL,updated);
@@ -449,10 +520,8 @@ function App(){
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current=setTimeout(()=>{
       setSaveStatus('saving');
-      fetch(STORE_PEOPLE_URL,{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({version:STORE_VERSION,engineers:state.engineers,discMeta:state.discMeta,tierOrder:state.tierOrder})})
-        .then(r=>{setSaveStatus(r.ok?'saved':'error');setTimeout(()=>setSaveStatus(null),2000);})
-        .catch(()=>{setSaveStatus('error');setTimeout(()=>setSaveStatus(null),3000);});
+      saveLS(STORE_PEOPLE_URL,{version:STORE_VERSION,engineers:state.engineers,discMeta:state.discMeta,tierOrder:state.tierOrder});
+      setSaveStatus('saved');setTimeout(()=>setSaveStatus(null),2000);
     },1500);
     return()=>clearTimeout(saveTimerRef.current);
   },[storeLoaded,state.engineers,state.discMeta,state.tierOrder]);
@@ -463,10 +532,8 @@ function App(){
     clearTimeout(saveProjectsTimerRef.current);
     saveProjectsTimerRef.current=setTimeout(()=>{
       setSaveStatus('saving');
-      fetch(STORE_PROJECTS_URL,{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({version:STORE_VERSION,projects:state.projects,assignments:state.assignments})})
-        .then(r=>{setSaveStatus(r.ok?'saved':'error');setTimeout(()=>setSaveStatus(null),2000);})
-        .catch(()=>{setSaveStatus('error');setTimeout(()=>setSaveStatus(null),3000);});
+      saveLS(STORE_PROJECTS_URL,{version:STORE_VERSION,projects:state.projects,assignments:state.assignments});
+      setSaveStatus('saved');setTimeout(()=>setSaveStatus(null),2000);
     },1500);
     return()=>clearTimeout(saveProjectsTimerRef.current);
   },[storeLoaded,state.projects,state.assignments]);
@@ -477,7 +544,7 @@ function App(){
     const todayStr=now.toISOString().slice(0,10);
     const ts=Date.now();
     const base={id:`snap-${ts}-manual`,date:todayStr,label:'Manual snapshot',timestamp:ts,auto:false};
-    const put=(url,snaps)=>fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:STORE_VERSION,snapshots:snaps})}).catch(()=>{});
+    const put=(key,snaps)=>saveLS(key,{version:STORE_VERSION,snapshots:snaps});
     setSnapsPeople(prev=>{const u=[{...base,engineers:state.engineers,discMeta:state.discMeta,tierOrder:state.tierOrder},...prev].slice(0,10);put(STORE_SNAPS_PEOPLE_URL,u);return u;});
     setSnapsProjects(prev=>{const u=[{...base,projects:state.projects,assignments:state.assignments,tierOrder:state.tierOrder},...prev].slice(0,10);put(STORE_SNAPS_PROJECTS_URL,u);return u;});
     setSnapsChangelog(prev=>{
@@ -507,7 +574,7 @@ function App(){
   const handleRestoreUsers=useCallback((snap)=>{
     if(Array.isArray(snap.users)){
       setUserRegistry(snap.users);
-      fetch(STORE_USERS_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:STORE_VERSION,users:snap.users})}).catch(()=>{});
+      saveLS(STORE_USERS_URL,{version:STORE_VERSION,users:snap.users});
     }
     addLog(`Restored Users from ${fmtSnapLabel(snap.timestamp)}`,'info');
   },[addLog]);
@@ -517,11 +584,7 @@ function App(){
     if(!storeLoaded)return; // don't overwrite server data before initial load completes
     clearTimeout(saveLogTimerRef.current);
     saveLogTimerRef.current=setTimeout(()=>{
-      fetch(STORE_LOG_URL,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({version:STORE_VERSION,entries:changeLog}),
-      }).catch(()=>{});
+      saveLS(STORE_LOG_URL,{version:STORE_VERSION,entries:changeLog});
     },1500);
     return()=>clearTimeout(saveLogTimerRef.current);
   },[storeLoaded,changeLog]);
@@ -531,11 +594,7 @@ function App(){
     if(!storeLoaded)return; // don't overwrite server data before initial load completes
     clearTimeout(saveUsersTimerRef.current);
     saveUsersTimerRef.current=setTimeout(()=>{
-      fetch(STORE_USERS_URL,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({version:STORE_VERSION,users:userRegistry}),
-      }).catch(()=>{});
+      saveLS(STORE_USERS_URL,{version:STORE_VERSION,users:userRegistry});
     },1500);
     return()=>clearTimeout(saveUsersTimerRef.current);
   },[storeLoaded,userRegistry]);
@@ -766,6 +825,12 @@ function App(){
     <UserCtx.Provider value={{...userPerms,userRegistry,setUserRegistry}}>
     <DiscCtx.Provider value={activeMeta}>
     <div style={{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}}>
+      <div style={{flexShrink:0,background:'#fefce8',borderBottom:'1px solid #f5c800',display:'flex',alignItems:'stretch'}}>
+        <div style={{width:8,flexShrink:0,background:'repeating-linear-gradient(45deg,#f5c800,#f5c800 5px,#1a1a1a 5px,#1a1a1a 10px)'}}/>
+        <div style={{padding:'6px 14px',fontSize:13,color:'#1a1a1a',lineHeight:1.4,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+          <span>🚧 <strong>Demo Mode</strong> — sample data, changes save to this browser only.</span>
+        </div>
+      </div>
       {testRole&&(
         <div style={{background:'#FEF3C7',borderBottom:'1px solid #FCD34D',padding:'6px 16px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px',fontSize:'.8rem',flexShrink:0}}>
           <span style={{display:'flex',alignItems:'center',gap:'8px',color:'#92400E',fontWeight:500}}>

@@ -2,14 +2,14 @@ const {useState}=React;
 
 export function StoreDataModal({onClose}){
   const STORES=[
-    {key:'people',      url:'/vibes/store/capacity-iq:shared/people',              label:'People',              desc:'Engineers and discipline hierarchy'},
-    {key:'projects',    url:'/vibes/store/capacity-iq:shared/projects',            label:'Projects',            desc:'Projects and assignments'},
-    {key:'changelog',   url:'/vibes/store/capacity-iq:shared/changelog',           label:'Change Log',          desc:'History of edits'},
-    {key:'users',       url:'/vibes/store/capacity-iq:shared/users',               label:'Users',               desc:'User registry and permissions'},
-    {key:'snaps-people',   url:'/vibes/store/capacity-iq:shared/snapshots-people',   label:'Snapshots — People',   desc:'Point-in-time people backups'},
-    {key:'snaps-projects', url:'/vibes/store/capacity-iq:shared/snapshots-projects', label:'Snapshots — Projects', desc:'Point-in-time project backups'},
-    {key:'snaps-changelog',url:'/vibes/store/capacity-iq:shared/snapshots-changelog',label:'Snapshots — Change Log',desc:'Point-in-time changelog backups'},
-    {key:'snaps-users',    url:'/vibes/store/capacity-iq:shared/snapshots-users',    label:'Snapshots — Users',    desc:'Point-in-time user backups'},
+    {key:'people',      lsKey:'capacityiq-demo:people',              label:'People',              desc:'Engineers and discipline hierarchy'},
+    {key:'projects',    lsKey:'capacityiq-demo:projects',            label:'Projects',            desc:'Projects and assignments'},
+    {key:'changelog',   lsKey:'capacityiq-demo:changelog',           label:'Change Log',          desc:'History of edits'},
+    {key:'users',       lsKey:'capacityiq-demo:users',               label:'Users',               desc:'User registry and permissions'},
+    {key:'snaps-people',   lsKey:'capacityiq-demo:snapshots-people',   label:'Snapshots — People',   desc:'Point-in-time people backups'},
+    {key:'snaps-projects', lsKey:'capacityiq-demo:snapshots-projects', label:'Snapshots — Projects', desc:'Point-in-time project backups'},
+    {key:'snaps-changelog',lsKey:'capacityiq-demo:snapshots-changelog',label:'Snapshots — Change Log',desc:'Point-in-time changelog backups'},
+    {key:'snaps-users',    lsKey:'capacityiq-demo:snapshots-users',    label:'Snapshots — Users',    desc:'Point-in-time user backups'},
   ];
   const[status,setStatus]=useState({});
   const[confirming,setConfirming]=useState(null);
@@ -21,25 +21,24 @@ export function StoreDataModal({onClose}){
   },[onClose]);
   React.useEffect(()=>{
     const init={};
-    STORES.forEach(s=>{init[s.key]={loading:true,data:null,error:null,cleared:false};});
-    setStatus(init);
     STORES.forEach(s=>{
-      fetch(s.url)
-        .then(r=>r.ok?r.json():null)
-        .then(data=>setStatus(prev=>({...prev,[s.key]:{loading:false,data,error:null,cleared:false}})))
-        .catch(()=>setStatus(prev=>({...prev,[s.key]:{loading:false,data:null,error:'Failed to load',cleared:false}})));
+      let data=null,error=null;
+      try{const raw=localStorage.getItem(s.lsKey);data=raw?JSON.parse(raw):null;}
+      catch(e){error='Failed to load';}
+      init[s.key]={loading:false,data,error,cleared:false};
     });
+    setStatus(init);
   },[]);
-  const clearStore=(key,url)=>{
-    fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:0})})
-      .then(r=>{
-        if(r.ok)setStatus(prev=>({...prev,[key]:{loading:false,data:null,error:null,cleared:true}}));
-        else setStatus(prev=>({...prev,[key]:{...prev[key],error:'Failed to clear'}}));
-      })
-      .catch(()=>setStatus(prev=>({...prev,[key]:{...prev[key],error:'Failed to clear'}})));
+  const clearStore=(key,lsKey)=>{
+    try{
+      localStorage.removeItem(lsKey);
+      setStatus(prev=>({...prev,[key]:{loading:false,data:null,error:null,cleared:true}}));
+    }catch(e){
+      setStatus(prev=>({...prev,[key]:{...prev[key],error:'Failed to clear'}}));
+    }
     setConfirming(null);
   };
-  const clearAll=()=>{STORES.forEach(s=>clearStore(s.key,s.url));setConfirmingAll(false);};
+  const clearAll=()=>{STORES.forEach(s=>clearStore(s.key,s.lsKey));setConfirmingAll(false);};
   const getSummary=(key,data)=>{
     if(!data)return null;
     if(key==='changelog')return data.entries?.length?`${data.entries.length} entries`:'empty';
@@ -50,11 +49,11 @@ export function StoreDataModal({onClose}){
     <div className="modal-overlay" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
       <div className="settings-modal" style={{maxWidth:'520px',width:'100%'}}>
         <div className="modal-hdr">
-          <span className="modal-title">Server Data Files</span>
+          <span className="modal-title">Local Demo Data</span>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         <div style={{padding:'14px 20px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'12px'}}>
-          <span style={{fontSize:'.8rem',color:'var(--text-3)'}}>Stored on the Vibes server. Clearing is permanent.</span>
+          <span style={{fontSize:'.8rem',color:'var(--text-3)'}}>Stored in this browser's localStorage. Clearing is permanent.</span>
           {confirmingAll?(
             <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
               <span style={{fontSize:'.78rem',color:'var(--text-2)'}}>Clear all files?</span>
@@ -84,7 +83,7 @@ export function StoreDataModal({onClose}){
                   confirming===s.key?(
                     <div style={{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
                       <span style={{fontSize:'.78rem',color:'var(--text-2)'}}>Clear this file?</span>
-                      <button className="btn btn-danger" style={{padding:'4px 10px',fontSize:'.78rem'}} onClick={()=>clearStore(s.key,s.url)}>Yes</button>
+                      <button className="btn btn-danger" style={{padding:'4px 10px',fontSize:'.78rem'}} onClick={()=>clearStore(s.key,s.lsKey)}>Yes</button>
                       <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:'.78rem'}} onClick={()=>setConfirming(null)}>No</button>
                     </div>
                   ):(
