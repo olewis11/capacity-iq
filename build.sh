@@ -24,3 +24,8 @@ print(f'Built dist/index.html ({kb} KB)')
 # Keep preview server in sync
 cp dist/index.html /tmp/index.html
 echo "Preview synced to /tmp/index.html"
+
+# Keep the public GitHub Pages demo (docs/) in sync
+mkdir -p docs
+cp dist/index.html docs/index.html
+echo "Demo synced to docs/index.html"
