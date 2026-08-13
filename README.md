@@ -4,6 +4,10 @@ A React SPA for engineering resource planning — maps headcount supply (enginee
 
 This is a personal copy of a tool I built for internal use at a previous job. It has been stripped of company-specific data and identifiers (employee records, org data, internal deploy tooling). See `CLAUDE.md` for full architecture and data-model notes.
 
+## License
+
+Shared publicly for reference and portfolio purposes only. All rights reserved — no license is granted to copy, modify, or redistribute this code, in whole or in part, without my prior written permission.
+
 ## Stack
 
 - React 18 (loaded as a global, no bundler-managed import)
